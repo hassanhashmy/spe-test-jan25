@@ -1,0 +1,16 @@
+# Vagrant related
+# env files
+# flask
+.coverage*
+.env
+.env.*
+.idea/
+.tox/
+.vagrant/
+.venv*/
+.vscode/
+__pycache__/
+dist/
+docs/_build/
+htmlcov/
+venv*/

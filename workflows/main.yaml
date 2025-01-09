@@ -1,0 +1,95 @@
+name: Deployment workflow
+
+on:
+  push:
+
+jobs:
+  # This determine scan or tests to be run
+  # e.g skip Snyk if no token was declared
+  determine-test:
+    runs-on: self-hosted
+    steps:
+      - name: Determine tests
+        id: determine-test
+        run: |
+          if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
+            echo "Snyk token found"
+            echo "synk-test=true" >> "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      snyk-test: ${{ steps.determine-test.outputs.snyk-test }}
+
+  pre-commit:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        hook:
+          - trailing-whitespace
+          - end-of-file-fixer
+          - debug-statements
+          - file-contents-sorter
+          - detect-private-key
+          - name-tests-test
+          - autoflake
+          - reorder-python-imports
+          - black
+          - mypy
+          - pyupgrade
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.11.3'
+          architecture: x64
+
+      - name: Get pre-commit
+        run: pip install pre-commit
+
+      - name: Run ${{ matrix.hook }} hook
+        run: |
+          pre-commit run ${{ matrix.hook }} --all-files --show-diff-on-failure
+
+  security:
+    needs: [determine-test]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get snyk
+        uses: snyk/actions/setup@master
+
+      - name: Run Snyk Test
+        if: ${{ needs.determine-test.outputs.synk-test == 'true' }}
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  build-and-deploy:
+    needs: [pre-commit, security]
+    runs-on: self-hosted
+    # Ensure only a single workflow will run at a time
+    concurrency:
+      group: my-app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: |
+          docker compose build
+
+      - name: Run Tests (Placeholder)
+        run: |
+          echo "Running placeholder tests..."
+          exit 0 # Replace with actual test commands
+
+      - name: Deploy to Local Docker Environment
+        run: |
+          docker compose up -d
+
+      - name: Test if application is running
+        run: |
+          scripts/monitor.sh

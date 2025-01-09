@@ -1,0 +1,44 @@
+---
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: build
+      - id: end-of-file-fixer
+        exclude: build
+      - id: debug-statements
+      - id: file-contents-sorter
+        files: .gitignore
+      - id: detect-private-key
+      - id: name-tests-test
+      - id: no-commit-to-branch
+        args: [ '--branch', 'master', '--branch', 'dev' ]
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args: [ '--in-place', '--remove-unused-variable', '--remove-all-unused-imports' ]
+  - repo: https://github.com/asottile/reorder_python_imports
+    rev: v3.13.0
+    hooks:
+      - id: reorder-python-imports
+        exclude: migrations
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        args: [ --line-length=100 ]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.1
+    hooks:
+      - id: mypy
+        exclude: "(?x)(^migrations/|^tests/)"
+        additional_dependencies:
+          - types-freezegun
+          - types-redis
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.17.0
+    hooks:
+      - id: pyupgrade
+        args: [ --py311-plus ]
